@@ -1,0 +1,17 @@
+{
+  "name": "publicador-mla-mlc-backend",
+  "version": "0.1.0",
+  "description": "Backend liviano: OAuth con Mercado Libre Argentina y proxy seguro de la API de items.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
