@@ -2,10 +2,106 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Andes Numismática · Publicador MLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Funciona 🎉</h1>
-  <p>Esta es la página de prueba antes de construir el diseño real.</p>
+<div class="shell">
+
+  <header>
+    <div class="brand-block">
+      <div class="brand-divider" style="width:3px;height:38px;background:var(--copper);"></div>
+      <div>
+        <div class="brand-eyebrow">Andes Numismática · Sesión de trabajo</div>
+        <h1>Publicador <span>MLA → MLC</span></h1>
+      </div>
+    </div>
+    <div class="counter-chip">
+      FILAS EN EXCEL
+      <b id="counterVal">0</b>
+    </div>
+  </header>
+
+  <!-- STEP 1: identificar publicación -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div>
+        <div class="step-title">Identificar publicación</div>
+        <div class="step-sub">ID, código MLA o URL completa de mercadolibre.com.ar</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="lookup-row">
+        <input type="text" id="lookupInput" placeholder="MLA1470133733 · 1470133733 · https://articulo.mercadolibre.com.ar/...">
+        <button class="btn btn-copper" id="btnFetch">Obtener datos</button>
+      </div>
+    </div>
+    <div id="statusMsg"></div>
+  </div>
+
+  <!-- STEP 2: datos de la publicación -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div>
+        <div class="step-title">Datos de la publicación</div>
+        <div class="step-sub">Traídos automáticamente · editables antes de generar la fila</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="field-grid">
+        <div class="field span-2">
+          <label>Título</label>
+          <input id="f-titulo" disabled placeholder="Se completa al obtener datos">
+        </div>
+        <div class="field"><label>País</label><input id="f-pais" disabled></div>
+        <div class="field"><label>Año</label><input id="f-anio" disabled></div>
+        <div class="field"><label>Metal</label><input id="f-metal" disabled></div>
+        <div class="field"><label>Tipo de moneda</label><input id="f-tipo" disabled></div>
+        <div class="field"><label>Valor de la moneda</label><input id="f-valor" disabled></div>
+        <div class="field"><label>Precio (ARS, editable)</label><input id="f-precio" disabled></div>
+        <div class="field"><label>Condición</label><input id="f-cond" disabled></div>
+        <div class="field span-2"><label>Descripción</label><textarea id="f-desc" disabled></textarea></div>
+
+        <div class="field manual"><label>Costo</label><input id="f-costo" placeholder="0.00"></div>
+        <div class="field manual"><label>¿Conmemorativa?</label>
+          <select id="f-conm"><option value="">— sin definir —</option><option>Sí</option><option>No</option></select>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px;">
+        <label>Fotos de la publicación</label>
+        <div class="photo-row" id="photoRow"></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" id="btnClean">Clean</button>
+      <button class="btn btn-patina" id="btnAddRow" disabled>Generar fila</button>
+      <button class="btn btn-copper" id="btnExcel" disabled>Generar Excel (<span id="excelCount">0</span>)</button>
+    </div>
+  </div>
+
+  <!-- BLOQUE DE VALORES FIJOS -->
+  <div class="fixed-block">
+    <div class="fixed-head">
+      <div>
+        <div class="step-title" style="color:var(--white);">Valores fijos de publicación</div>
+        <div class="step-sub" style="color:#c9c2ad;">No cambian salvo que actives edición</div>
+      </div>
+      <label class="unlock">
+        <input type="checkbox" id="unlockFixed"> Habilitar edición
+      </label>
+    </div>
+    <div class="fixed-grid" id="fixedGrid"></div>
+  </div>
+
+  <footer>app.andesnumismatica.cl · Publicador MLA → MLC</footer>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
