@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andes Numismática · Publicador MLC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="brand-block">
+    <img src="logo.png" alt="Andes Numismática">
+    <div>
+      <div class="brand-eyebrow">Andes Numismática · Sesión de trabajo</div>
+      <h1>Publicador <span>MLA → MLC</span></h1>
+    </div>
+  </div>
+  <input type="text" id="lookupInput" class="lookup-input" placeholder="MLA1470133733 · 1470133733 · https://articulo.mercadolibre.com.ar/...">
+  <button class="btn btn-copper" id="btnFetch">Obtener datos</button>
+</header>
+
+<div class="shell">
+
+  <div id="statusMsg"></div>
+
+  <!-- Datos de la publicación -->
+  <div class="step">
+    <div class="step-head">
+      <div class="step-title">Datos de la publicación</div>
+      <div class="step-sub">Traídos automáticamente · editables antes de generar la fila</div>
+    </div>
+
+    <div class="step-body">
+      <div class="content-grid">
+        <div class="col-main">
+          <div class="field-grid">
+            <div class="field"><label>Título</label><input id="f-titulo" disabled placeholder="Se completa al obtener datos"></div>
+            <div class="field"><label>Año</label><input id="f-anio" disabled></div>
+
+            <div class="field"><label>País</label><input id="f-pais" disabled></div>
+            <div class="field"><label>Tipo de moneda</label><input id="f-tipo" disabled></div>
+
+            <div class="field"><label>Metal</label><input id="f-metal" disabled></div>
+            <div class="field manual"><label>Costo U$D</label><input id="f-costo" placeholder="0.00"></div>
+
+            <div class="field"><label>Valor de la moneda</label><input id="f-valor" disabled></div>
+            <div class="field manual"><label>¿Conmemorativa?</label>
+              <select id="f-conm"><option value="">— sin definir —</option><option>Sí</option><option>No</option></select>
+            </div>
+
+            <div class="field"><label>Condición</label><input id="f-cond" disabled></div>
+            <div class="field"><label>Precio de venta (CLP)</label><input id="f-precio" disabled placeholder="Usá el panel Calcular Valor →"></div>
+          </div>
+        </div>
+
+        <div class="col-side">
+          <div class="field">
+            <label>Fotos de la publicación</label>
+            <div class="photo-row" id="photoRow"></div>
+          </div>
+
+          <div class="calc-panel">
+            <div class="calc-panel-head">Calcular Valor</div>
+            <div class="calc-panel-body">
+              <div class="calc-col">
+                <div class="calc-col-label">Fijo (U$D)</div>
+                <input type="number" step="0.01" id="calcFijo" value="10.00">
+                <button class="calc-apply-btn" id="btnAplicarFijo">Aplicar</button>
+              </div>
+              <div class="calc-col">
+                <div class="calc-col-label">Multiplicador (×)</div>
+                <input type="number" step="0.1" id="calcMultiplicador" value="2">
+                <button class="calc-apply-btn" id="btnAplicarMult">Aplicar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions-group">
+            <button class="btn btn-ghost" id="btnClean">Clean</button>
+            <button class="btn btn-patina" id="btnAddRow" disabled>Nueva Fila</button>
+            <button class="btn btn-copper btn-icon" id="btnExcel" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Excel <span id="excelCount">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-full">
+        <label>Descripción</label>
+        <textarea id="f-desc" disabled></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Valores fijos de publicación -->
+  <div class="fixed-block">
+    <div class="fixed-head">
+      <div>
+        <div class="step-title">Valores fijos de publicación</div>
+        <div class="step-sub">No cambian salvo que actives edición</div>
+      </div>
+      <label class="unlock">
+        <input type="checkbox" id="unlockFixed"> Habilitar edición
+      </label>
+    </div>
+    <div class="fixed-grid" id="fixedGrid"></div>
+
+    <div class="internal-note">Valores internos de cálculo · no se exportan al Excel</div>
+    <div class="fixed-grid internal" id="internalGrid"></div>
+  </div>
+
+  <footer>app.andesnumismatica.cl · Publicador MLA → MLC</footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
