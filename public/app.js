@@ -136,6 +136,32 @@ function extractItemId(raw) {
   return null;
 }
 
+// --- Decodificar el código Costo/Ganancia escrito en el SKU ---
+//
+// Formato: X<costo>Z<ganancia fija>   (Y queda reservado para "multiplicador",
+// sin uso todavía). La letra P reemplaza al punto decimal en ambos números,
+// porque el campo SKU de MLA no acepta símbolos.
+//
+// Ejemplos: "X1Z2P5" -> costo 1, ganancia fija 2.5
+//           "X3P20Z10" -> costo 3.20, ganancia fija 10
+//
+// Devuelve null si el SKU no tiene este formato (publicación sin código,
+// o con un SKU usado para otra cosa) — en ese caso no se toca nada.
+function decodeSkuCode(sku) {
+  if (!sku) return null;
+
+  const match = sku.trim().match(/^X([0-9P]+)(Z|Y)([0-9P]+)$/i);
+  if (!match) return null;
+
+  const costo = parseFloat(match[1].replace(/P/gi, "."));
+  const modo = match[2].toUpperCase() === "Z" ? "fijo" : "multiplicador";
+  const valor = parseFloat(match[3].replace(/P/gi, "."));
+
+  if (isNaN(costo) || isNaN(valor)) return null;
+
+  return { costo, modo, valor };
+}
+
 // --- Poblar el formulario con los datos traídos del backend ---
 function populateForm(data) {
   el("f-titulo").value = data.title || "";
@@ -160,7 +186,24 @@ function populateForm(data) {
 
   renderPhotos(data.photos || []);
 
+  // Si el SKU trae un código Costo/Ganancia (formato X<costo>Z<ganancia>),
+  // completamos el Costo solo y disparamos el mismo cálculo que hace
+  // "Aplicar" — sin tocar nada, el campo sigue siendo editable después.
+  const decoded = decodeSkuCode(data.sku);
+  if (decoded) {
+    el("f-costo").value = decoded.costo;
+    if (decoded.modo === "fijo") {
+      el("calcFijo").value = decoded.valor;
+    } else {
+      el("calcMultiplicador").value = decoded.valor;
+    }
+  }
+
   btnAddRow.disabled = false;
+
+  if (decoded) {
+    calcularPrecioVenta(decoded.modo);
+  }
 }
 
 // --- Limpiar el formulario de la publicación actual (no borra filas ya generadas) ---
