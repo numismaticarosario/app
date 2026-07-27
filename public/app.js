@@ -10,7 +10,7 @@ const FIXED_FIELDS = [
   { key: "stock", label: "Stock", value: "1" },
   { key: "moneda", label: "Moneda", value: "$" },
   { key: "ancho", label: "Ancho (cm)", value: "10" },
-  { key: "alto", label: "Alto (cm)", value: "14" },
+  { key: "alto", label: "Alto (cm)", value: "16" },
   { key: "profundidad", label: "Profundidad (cm)", value: "1" },
   { key: "peso", label: "Peso (kg)", value: "0.10" },
   { key: "tipoPublicacion", label: "Tipo de publicación", value: "Clásica" },
@@ -34,8 +34,8 @@ const INTERNAL_FIELDS = [
   { key: "tasaCambio", label: "Rate CLP - USD", value: "950" },
   { key: "comisionML", label: "Comisión ML (%)", value: "14" },
   { key: "costoFijoVenta", label: "Costo fijo por venta (CLP)", value: "750" },
-  { key: "iva", label: "IVA (%)", value: "15" },
-  { key: "envioGratisDesde", label: "Umbral Envío Gratis", value: "15000" },
+  { key: "iva", label: "IVA (%)", value: "19" },
+  { key: "envioGratisDesde", label: "Umbral Envío Gratis", value: "12999" },
 ];
 
 // --- Referencias a elementos del DOM ---
