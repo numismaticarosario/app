@@ -221,15 +221,13 @@ function populateForm(data) {
     el("f-tipo").value = data.designName || "";
     el("f-valor").value = data.billValue || "";
     el("f-metal").value = "";
-    el("f-conm").value = "";
   } else {
     el("f-tipo").value = data.coinType || "";
     el("f-valor").value = data.coinValue || "";
     el("f-metal").value = data.metal || "";
-    el("f-conm").value = data.commemorative ? "Sí" : "";
   }
 
-  ["f-titulo", "f-pais", "f-anio", "f-metal", "f-tipo", "f-valor", "f-cond", "f-desc"]
+  ["f-titulo", "f-pais", "f-anio", "f-metal", "f-tipo", "f-valor", "f-cond", "f-desc", "f-costo"]
     .forEach((id) => (el(id).disabled = false));
 
   // El precio de MLA (ARS) ya NO se muestra: genera confusión, porque el precio
@@ -263,15 +261,13 @@ function populateForm(data) {
 
 // --- Limpiar el formulario de la publicación actual (no borra filas ya generadas) ---
 function cleanForm() {
-  ["f-titulo", "f-pais", "f-anio", "f-metal", "f-tipo", "f-valor", "f-cond", "f-desc"]
+  ["f-titulo", "f-pais", "f-anio", "f-metal", "f-tipo", "f-valor", "f-cond", "f-desc", "f-costo"]
     .forEach((id) => {
       el(id).value = "";
       el(id).disabled = true;
     });
   el("f-precio").value = "";
   el("f-precio").disabled = true;
-  el("f-costo").value = "";
-  el("f-conm").value = "";
   renderPhotos([]);
   lookupInput.value = "";
   lastItemData = null;
@@ -423,7 +419,6 @@ btnAddRow.addEventListener("click", () => {
           metal: el("f-metal").value,
           tipoMoneda: el("f-tipo").value,
           valorMoneda: el("f-valor").value,
-          conmemorativa: el("f-conm").value,
         };
 
   rows.push(row);
