@@ -10,6 +10,13 @@
 //      publicaciones ajenas).
 //   4) Trae la descripción (viene en un endpoint aparte en la API de ML).
 //   5) Devuelve todo ya mapeado a los campos que el formulario necesita.
+//
+// *** TEMPORAL — SOLO PARA DIAGNÓSTICO ***
+// Se agregó "rawAttributes" a la respuesta, con el array completo de
+// atributos crudos del ítem (attribute_id reales), para poder identificar
+// los atributos de la categoría Billetes antes de armar su mapeo definitivo.
+// Una vez que confirmemos esos IDs, esta línea se saca y este archivo
+// vuelve a quedar exactamente como estaba.
 
 const express = require("express");
 const axios = require("axios");
@@ -55,7 +62,9 @@ router.get("/:id", async (req, res) => {
     }
 
     const formFields = mapItemToFormFields(item, description);
-    res.json(formFields);
+
+    // *** TEMPORAL: agregamos los atributos crudos para diagnóstico ***
+    res.json({ ...formFields, rawAttributes: item.attributes, rawCategoryId: item.category_id, rawDomainId: item.domain_id });
   } catch (err) {
     if (err.code === "NOT_AUTHENTICATED") {
       return res.status(401).json({
