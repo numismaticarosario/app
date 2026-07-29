@@ -49,6 +49,20 @@ h1 span{color:var(--ink);}
 }
 .lookup-input::placeholder{color:#a89f8a;}
 
+/* switch de modo de sesión: Monedas / Billetes */
+.mode-toggle{
+  display:flex;background:var(--paper-2);border:1px solid var(--line);
+  border-radius:2px;overflow:hidden;flex-shrink:0;
+}
+.mode-btn{
+  font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12.5px;
+  padding:10px 16px;border:none;background:transparent;color:var(--muted);
+  cursor:pointer;transition:background .15s ease,color .15s ease;
+}
+.mode-btn.active{background:var(--ink);color:var(--white);}
+.mode-btn:disabled{cursor:not-allowed;opacity:.55;}
+.mode-btn:not(.active):hover:not(:disabled){background:var(--line);}
+
 .btn{
   font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13.5px;
   border:none;border-radius:2px;padding:12px 20px;cursor:pointer;
@@ -90,6 +104,10 @@ h1 span{color:var(--ink);}
 }
 .field input:disabled{background:#e2dbc9;color:#8f8875;border-style:dashed;}
 .field.manual label::after{content:" · manual";color:var(--patina);font-style:italic;text-transform:none;letter-spacing:0;}
+
+/* en modo Billetes, se ocultan los campos que solo aplican a Monedas
+   (Metal, ¿Conmemorativa?) — el resto de la grilla se reacomoda solo */
+.field-grid.mode-billetes .field-coins-only{display:none;}
 
 .col-side{display:flex;flex-direction:column;height:100%;}
 
