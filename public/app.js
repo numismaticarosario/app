@@ -127,12 +127,27 @@ function renderPhotos(photoUrls) {
   }
 }
 renderPhotos([]); // estado inicial: los 10 espacios inactivos
+applyFieldOrder(currentMode); // orden inicial de campos (modo Monedas)
 
 // --- Mensajes de estado (error / éxito) ---
 function showStatus(message, type) {
   statusMsg.innerHTML = message
     ? `<div class="status-msg ${type}">${message}</div>`
     : "";
+}
+
+// --- Orden de los campos según el modo (Billetes tiene un orden propio;
+// Metal y Libre a definir no entran en ese orden porque están ocultos ahí) ---
+function applyFieldOrder(mode) {
+  const order =
+    mode === "billetes"
+      ? ["field-titulo", "field-tipo", "field-pais", "field-valor", "field-cond", "field-costo", "field-anio", "field-precio", "field-metal", "field-libre"]
+      : ["field-titulo", "field-anio", "field-pais", "field-tipo", "field-metal", "field-costo", "field-valor", "field-precio", "field-cond", "field-libre"];
+
+  order.forEach((id) => {
+    const node = document.getElementById(id);
+    if (node) fieldGrid.appendChild(node);
+  });
 }
 
 // --- Modo de sesión: Monedas / Billetes ---
@@ -148,6 +163,7 @@ function setMode(mode) {
   modeBtnMonedas.classList.toggle("active", mode === "monedas");
   modeBtnBilletes.classList.toggle("active", mode === "billetes");
   fieldGrid.classList.toggle("mode-billetes", mode === "billetes");
+  applyFieldOrder(mode);
 
   if (mode === "billetes") {
     lblTipo.textContent = "Nombre del diseño";
@@ -158,7 +174,6 @@ function setMode(mode) {
   }
 
   cleanForm();
-  showStatus(`Modo de sesión: ${mode === "billetes" ? "Billetes" : "Monedas"}.`, "ok");
 }
 
 // --- Bloquea/desbloquea el switch según si hay filas sin exportar ---
@@ -284,7 +299,7 @@ btnFetch.addEventListener("click", async () => {
   }
 
   btnFetch.disabled = true;
-  showStatus("Buscando publicación…", "ok");
+  showStatus("", "");
 
   try {
     const res = await fetch(`/api/items/${itemId}?mode=${currentMode}`);
@@ -305,7 +320,7 @@ btnFetch.addEventListener("click", async () => {
 
     lastItemData = data;
     populateForm(data);
-    showStatus(`Datos cargados: ${data.title}`, "ok");
+    showStatus("", "");
   } catch (err) {
     showStatus("Error de conexión con el backend. Probá de nuevo.", "error");
   } finally {
@@ -370,7 +385,7 @@ function calcularPrecioVenta(modo) {
   precioInput.dataset.raw = Math.round(precioFinal); // valor numérico puro, sin formato, para el Excel
   precioInput.disabled = false;
 
-  showStatus(`Precio de venta calculado: $${precioInput.value} CLP`, "ok");
+  showStatus("", "");
 }
 
 btnAplicarFijo.addEventListener("click", () => calcularPrecioVenta("fijo"));
@@ -423,7 +438,7 @@ btnAddRow.addEventListener("click", () => {
 
   rows.push(row);
   updateCounters();
-  showStatus(`Fila agregada (${rows.length} en total). Podés cargar la siguiente publicación.`, "ok");
+  showStatus("", "");
   cleanForm();
 });
 
@@ -439,7 +454,7 @@ btnExcel.addEventListener("click", async () => {
   if (rows.length === 0) return;
 
   btnExcel.disabled = true;
-  showStatus("Generando el Excel…", "ok");
+  showStatus("", "");
 
   try {
     const res = await fetch("/api/generate-excel", {
@@ -453,8 +468,6 @@ btnExcel.addEventListener("click", async () => {
       showStatus(data.message || "No se pudo generar el Excel.", "error");
       return;
     }
-
-    const cantidad = rows.length;
 
     // Descarga el archivo que devuelve el backend
     const blob = await res.blob();
@@ -471,7 +484,7 @@ btnExcel.addEventListener("click", async () => {
     rows = [];
     updateCounters();
 
-    showStatus(`Excel descargado con ${cantidad} fila(s).`, "ok");
+    showStatus("", "");
   } catch (err) {
     showStatus("Error de conexión al generar el Excel. Probá de nuevo.", "error");
   } finally {
