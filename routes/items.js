@@ -1,6 +1,6 @@
 // routes/items.js
 //
-// GET /api/items/:id
+// GET /api/items/:id?mode=monedas|billetes
 //
 // Dado un ID de publicación de MLA (ej. MLA1470133733):
 //   1) Pide un access_token válido (se renueva solo si hace falta).
@@ -8,15 +8,11 @@
 //   3) Valida que el seller_id del ítem sea el tuyo (chequeo de propiedad,
 //      no negociable por seguridad: nunca se debe poder traer datos de
 //      publicaciones ajenas).
-//   4) Trae la descripción (viene en un endpoint aparte en la API de ML).
-//   5) Devuelve todo ya mapeado a los campos que el formulario necesita.
-//
-// *** TEMPORAL — SOLO PARA DIAGNÓSTICO ***
-// Se agregó "rawAttributes" a la respuesta, con el array completo de
-// atributos crudos del ítem (attribute_id reales), para poder identificar
-// los atributos de la categoría Billetes antes de armar su mapeo definitivo.
-// Una vez que confirmemos esos IDs, esta línea se saca y este archivo
-// vuelve a quedar exactamente como estaba.
+//   4) Valida que la categoría del ítem coincida con el "mode" pedido
+//      (Monedas o Billetes) — si no coincide, no se trae nada. Esto es
+//      lo que impide mezclar tipos dentro de una misma sesión de trabajo.
+//   5) Trae la descripción (viene en un endpoint aparte en la API de ML).
+//   6) Devuelve todo ya mapeado a los campos que el formulario necesita.
 
 const express = require("express");
 const axios = require("axios");
@@ -25,12 +21,30 @@ const { mapItemToFormFields } = require("../lib/attributeMapper");
 
 const router = express.Router();
 
+// domain_id real de MLA para cada modo, confirmado contra ítems reales:
+//   Monedas  -> MLA-COINS              (ej. MLA1470133733)
+//   Billetes -> MLA-COLLECTIBLE_BILLS  (ej. MLA905612492)
+const DOMAIN_BY_MODE = {
+  monedas: "MLA-COINS",
+  billetes: "MLA-COLLECTIBLE_BILLS",
+};
+
+const MODE_LABEL = {
+  monedas: "Monedas",
+  billetes: "Billetes",
+};
+
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
+  const mode = (req.query.mode || "monedas").toLowerCase();
 
   // Validación básica de formato antes de gastar una llamada a la API.
   if (!/^MLA\d+$/i.test(id)) {
     return res.status(400).json({ error: "INVALID_ID", message: "El ID debe tener el formato MLA1234567890." });
+  }
+
+  if (!DOMAIN_BY_MODE[mode]) {
+    return res.status(400).json({ error: "INVALID_MODE", message: "Modo de sesión inválido (esperado: monedas o billetes)." });
   }
 
   try {
@@ -48,6 +62,16 @@ router.get("/:id", async (req, res) => {
       });
     }
 
+    // --- Chequeo de categoría: el ítem tiene que ser del mismo tipo que la sesión activa ---
+    const expectedDomain = DOMAIN_BY_MODE[mode];
+    if (item.domain_id !== expectedDomain) {
+      return res.status(409).json({
+        error: "WRONG_CATEGORY",
+        message: `Esta publicación no es de ${MODE_LABEL[mode]}. Cambiá el modo de sesión o pegá una publicación de ${MODE_LABEL[mode]}.`,
+        detectedDomain: item.domain_id || null,
+      });
+    }
+
     // La descripción vive en un endpoint aparte.
     let description = "";
     try {
@@ -61,10 +85,8 @@ router.get("/:id", async (req, res) => {
       description = "";
     }
 
-    const formFields = mapItemToFormFields(item, description);
-
-    // *** TEMPORAL: agregamos los atributos crudos para diagnóstico ***
-    res.json({ ...formFields, rawAttributes: item.attributes, rawCategoryId: item.category_id, rawDomainId: item.domain_id });
+    const formFields = mapItemToFormFields(item, description, mode);
+    res.json(formFields);
   } catch (err) {
     if (err.code === "NOT_AUTHENTICATED") {
       return res.status(401).json({
