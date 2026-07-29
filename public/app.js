@@ -310,7 +310,7 @@ btnFetch.addEventListener("click", async () => {
       if (data.error === "NOT_OWNER") {
         showStatus("Esta publicación no pertenece a tu cuenta de Mercado Libre.", "error");
       } else if (data.error === "NOT_AUTHENTICATED") {
-        showStatus("Todavía no iniciaste sesión con Mercado Libre. Andá a /auth/login.", "error");
+        showStatus("Todavía no iniciaste sesión con Mercado Libre. Andá a https://app.andesnumismatica.cl/auth/login.", "error");
       } else {
         // Acá cae también WRONG_CATEGORY (publicación de otro tipo al modo activo),
         // el backend ya manda un mensaje claro listo para mostrar.
