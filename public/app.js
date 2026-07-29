@@ -1,7 +1,10 @@
 // app.js — lógica del frontend del Publicador MLA → MLC
 
-// Estado en memoria: las filas acumuladas para el Excel.
+// Estado en memoria: las filas acumuladas para el Excel, y el modo de
+// sesión activo ("monedas" o "billetes"). Todas las filas de "rows"
+// pertenecen siempre al mismo modo — no se mezclan en la misma cola.
 let rows = [];
+let currentMode = "monedas";
 
 const MAX_PHOTOS = 10;
 
@@ -52,6 +55,11 @@ const unlockFixed = el("unlockFixed");
 const photoRow = el("photoRow");
 const btnAplicarFijo = el("btnAplicarFijo");
 const btnAplicarMult = el("btnAplicarMult");
+const fieldGrid = el("fieldGrid");
+const modeBtnMonedas = el("modeBtnMonedas");
+const modeBtnBilletes = el("modeBtnBilletes");
+const lblTipo = el("lbl-tipo");
+const lblValor = el("lbl-valor");
 
 let lastItemData = null; // guarda el JSON crudo del último ítem traído
 
@@ -127,6 +135,42 @@ function showStatus(message, type) {
     : "";
 }
 
+// --- Modo de sesión: Monedas / Billetes ---
+//
+// Cambia qué atributos se piden a MLA (vía ?mode= en el fetch), qué
+// labels se muestran para los campos reutilizados (f-tipo / f-valor),
+// y qué plantilla de Excel se usa al exportar. El switch se bloquea
+// solo (ver updateModeLockState) mientras haya filas sin exportar.
+function setMode(mode) {
+  if (mode === currentMode) return;
+
+  currentMode = mode;
+  modeBtnMonedas.classList.toggle("active", mode === "monedas");
+  modeBtnBilletes.classList.toggle("active", mode === "billetes");
+  fieldGrid.classList.toggle("mode-billetes", mode === "billetes");
+
+  if (mode === "billetes") {
+    lblTipo.textContent = "Nombre del diseño";
+    lblValor.textContent = "Valor del billete";
+  } else {
+    lblTipo.textContent = "Tipo de moneda";
+    lblValor.textContent = "Valor de la moneda";
+  }
+
+  cleanForm();
+  showStatus(`Modo de sesión: ${mode === "billetes" ? "Billetes" : "Monedas"}.`, "ok");
+}
+
+// --- Bloquea/desbloquea el switch según si hay filas sin exportar ---
+function updateModeLockState() {
+  const locked = rows.length > 0;
+  modeBtnMonedas.disabled = locked;
+  modeBtnBilletes.disabled = locked;
+}
+
+modeBtnMonedas.addEventListener("click", () => setMode("monedas"));
+modeBtnBilletes.addEventListener("click", () => setMode("billetes"));
+
 // --- Extraer el ID de MLA desde texto libre (ID, código, o URL) ---
 function extractItemId(raw) {
   const text = raw.trim();
@@ -167,11 +211,23 @@ function populateForm(data) {
   el("f-titulo").value = data.title || "";
   el("f-pais").value = data.country || "";
   el("f-anio").value = data.year || "";
-  el("f-metal").value = data.metal || "";
-  el("f-tipo").value = data.coinType || "";
-  el("f-valor").value = data.coinValue || "";
   el("f-cond").value = data.condition === "new" ? "Nuevo" : "Usado";
   el("f-desc").value = data.description || "";
+
+  // f-tipo y f-valor se reutilizan entre modos con distinto significado:
+  //   Monedas  -> Tipo de moneda / Valor de la moneda
+  //   Billetes -> Nombre del diseño / Valor del billete
+  if (currentMode === "billetes") {
+    el("f-tipo").value = data.designName || "";
+    el("f-valor").value = data.billValue || "";
+    el("f-metal").value = "";
+    el("f-conm").value = "";
+  } else {
+    el("f-tipo").value = data.coinType || "";
+    el("f-valor").value = data.coinValue || "";
+    el("f-metal").value = data.metal || "";
+    el("f-conm").value = data.commemorative ? "Sí" : "";
+  }
 
   ["f-titulo", "f-pais", "f-anio", "f-metal", "f-tipo", "f-valor", "f-cond", "f-desc"]
     .forEach((id) => (el(id).disabled = false));
@@ -182,7 +238,6 @@ function populateForm(data) {
   el("f-precio").disabled = true;
 
   el("f-costo").value = "";
-  el("f-conm").value = data.commemorative ? "Sí" : "";
 
   renderPhotos(data.photos || []);
 
@@ -236,7 +291,7 @@ btnFetch.addEventListener("click", async () => {
   showStatus("Buscando publicación…", "ok");
 
   try {
-    const res = await fetch(`/api/items/${itemId}`);
+    const res = await fetch(`/api/items/${itemId}?mode=${currentMode}`);
     const data = await res.json();
 
     if (!res.ok) {
@@ -245,6 +300,8 @@ btnFetch.addEventListener("click", async () => {
       } else if (data.error === "NOT_AUTHENTICATED") {
         showStatus("Todavía no iniciaste sesión con Mercado Libre. Andá a /auth/login.", "error");
       } else {
+        // Acá cae también WRONG_CATEGORY (publicación de otro tipo al modo activo),
+        // el backend ya manda un mensaje claro listo para mostrar.
         showStatus(data.message || "No se pudo traer la publicación.", "error");
       }
       return;
@@ -342,35 +399,44 @@ btnAddRow.addEventListener("click", () => {
     internalValues[input.dataset.key] = input.value;
   });
 
-  const row = {
+  const baseRow = {
     id: lastItemData.id,
+    modo: currentMode,
     titulo: el("f-titulo").value,
     pais: el("f-pais").value,
     anio: el("f-anio").value,
-    metal: el("f-metal").value,
-    tipoMoneda: el("f-tipo").value,
-    valorMoneda: el("f-valor").value,
     precioClp: el("f-precio").value,
     precioClpRaw: parseFloat(el("f-precio").dataset.raw) || 0,
     condicion: el("f-cond").value,
     descripcion: el("f-desc").value,
     costoUsd: el("f-costo").value,
-    conmemorativa: el("f-conm").value,
     fotos: lastItemData.photos || [],
     fixed: fixedValues,
     internal: internalValues,
   };
 
+  const row =
+    currentMode === "billetes"
+      ? { ...baseRow, designName: el("f-tipo").value, billValue: el("f-valor").value }
+      : {
+          ...baseRow,
+          metal: el("f-metal").value,
+          tipoMoneda: el("f-tipo").value,
+          valorMoneda: el("f-valor").value,
+          conmemorativa: el("f-conm").value,
+        };
+
   rows.push(row);
   updateCounters();
-  showStatus(`Fila agregada (${rows.length} en total). Podés cargar la siguiente moneda.`, "ok");
+  showStatus(`Fila agregada (${rows.length} en total). Podés cargar la siguiente publicación.`, "ok");
   cleanForm();
 });
 
-// --- Contador de filas (en el botón de Excel) ---
+// --- Contador de filas (en el botón de Excel) + bloqueo del switch ---
 function updateCounters() {
   el("excelCount").textContent = rows.length;
   btnExcel.disabled = rows.length === 0;
+  updateModeLockState();
 }
 
 // --- Botón "Excel": pide al backend el .xlsx real y lo descarga ---
@@ -384,7 +450,7 @@ btnExcel.addEventListener("click", async () => {
     const res = await fetch("/api/generate-excel", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows }),
+      body: JSON.stringify({ rows, mode: currentMode }),
     });
 
     if (!res.ok) {
@@ -393,18 +459,24 @@ btnExcel.addEventListener("click", async () => {
       return;
     }
 
+    const cantidad = rows.length;
+
     // Descarga el archivo que devuelve el backend
     const blob = await res.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "publicar_monedas_chile.xlsx";
+    a.download = currentMode === "billetes" ? "publicar_billetes_chile.xlsx" : "publicar_monedas_chile.xlsx";
     document.body.appendChild(a);
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
 
-    showStatus(`Excel descargado con ${rows.length} fila(s).`, "ok");
+    // Al exportar, se vacía la cola: esto desbloquea el switch de modo.
+    rows = [];
+    updateCounters();
+
+    showStatus(`Excel descargado con ${cantidad} fila(s).`, "ok");
   } catch (err) {
     showStatus("Error de conexión al generar el Excel. Probá de nuevo.", "error");
   } finally {
