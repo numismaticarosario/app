@@ -141,8 +141,8 @@ function showStatus(message, type) {
 function applyFieldOrder(mode) {
   const order =
     mode === "billetes"
-      ? ["field-titulo", "field-tipo", "field-pais", "field-valor", "field-cond", "field-costo", "field-anio", "field-precio", "field-metal", "field-libre"]
-      : ["field-titulo", "field-anio", "field-pais", "field-tipo", "field-metal", "field-costo", "field-valor", "field-precio", "field-cond", "field-libre"];
+      ? ["field-titulo", "field-tipo", "field-pais", "field-costo", "field-cond", "field-precio", "field-anio", "field-libre", "field-valor", "field-libre2", "field-metal"]
+      : ["field-titulo", "field-anio", "field-pais", "field-tipo", "field-metal", "field-costo", "field-valor", "field-precio", "field-cond", "field-libre", "field-libre2"];
 
   order.forEach((id) => {
     const node = document.getElementById(id);
@@ -163,6 +163,7 @@ function setMode(mode) {
   modeBtnMonedas.classList.toggle("active", mode === "monedas");
   modeBtnBilletes.classList.toggle("active", mode === "billetes");
   fieldGrid.classList.toggle("mode-billetes", mode === "billetes");
+  el("field-libre2").style.display = mode === "billetes" ? "" : "none";
   applyFieldOrder(mode);
 
   if (mode === "billetes") {
