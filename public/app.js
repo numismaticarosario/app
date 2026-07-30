@@ -38,7 +38,7 @@ const INTERNAL_FIELDS = [
   { key: "comisionML", label: "Comisión ML (%)", value: "14" },
   { key: "costoFijoVenta", label: "Costo fijo por venta (CLP)", value: "750" },
   { key: "iva", label: "IVA (%)", value: "19" },
-  { key: "envioGratisDesde", label: "Umbral Envío Gratis", value: "12999" },
+  { key: "envioGratisDesde", label: "Umbral Envío Gratis", value: "19999" },
 ];
 
 // --- Referencias a elementos del DOM ---
@@ -62,6 +62,7 @@ const lblTipo = el("lbl-tipo");
 const lblValor = el("lbl-valor");
 
 let lastItemData = null; // guarda el JSON crudo del último ítem traído
+let lastGeneratedSku = null; // código X<costo>Z/Y<valor> generado por el último cálculo de precio
 
 // --- Render de una grilla de celdas fijas (simples o duales) ---
 function renderFixedCells(container, fields) {
@@ -198,9 +199,9 @@ function extractItemId(raw) {
 
 // --- Decodificar el código Costo/Ganancia escrito en el SKU ---
 //
-// Formato: X<costo>Z<ganancia fija>   (Y queda reservado para "multiplicador",
-// sin uso todavía). La letra P reemplaza al punto decimal en ambos números,
-// porque el campo SKU de MLA no acepta símbolos.
+// Formato: X<costo>Z<ganancia fija>   (Y = "multiplicador"). La letra P
+// reemplaza al punto decimal en ambos números, porque el campo SKU de
+// MLA no acepta símbolos.
 //
 // Ejemplos: "X1Z2P5" -> costo 1, ganancia fija 2.5
 //           "X3P20Z10" -> costo 3.20, ganancia fija 10
@@ -220,6 +221,16 @@ function decodeSkuCode(sku) {
   if (isNaN(costo) || isNaN(valor)) return null;
 
   return { costo, modo, valor };
+}
+
+// --- Generar el código Costo/Ganancia a partir de los valores realmente
+// usados en el último cálculo (vengan de MLA, o los hayas tipeado/editado
+// vos). Es la operación inversa de decodeSkuCode. ---
+function encodeSkuCode(costo, modo, valor) {
+  const costoStr = String(costo).replace(".", "P");
+  const modoChar = modo === "fijo" ? "Z" : "Y";
+  const valorStr = String(valor).replace(".", "P");
+  return `X${costoStr}${modoChar}${valorStr}`;
 }
 
 // --- Poblar el formulario con los datos traídos del backend ---
@@ -252,6 +263,7 @@ function populateForm(data) {
   el("f-precio").disabled = true;
 
   el("f-costo").value = "";
+  lastGeneratedSku = null;
 
   renderPhotos(data.photos || []);
 
@@ -284,6 +296,7 @@ function cleanForm() {
     });
   el("f-precio").value = "";
   el("f-precio").disabled = true;
+  lastGeneratedSku = null;
   renderPhotos([]);
   lookupInput.value = "";
   lastItemData = null;
@@ -342,6 +355,11 @@ btnClean.addEventListener("click", cleanForm);
 // protegido_ML     = base_clp ÷ (1 - comisionML/100)
 // + costo fijo por venta (CLP)
 // precio_final     = anterior ÷ (1 - iva/100)
+//
+// Además, cada vez que se calcula con éxito, se regenera el código
+// Costo/Ganancia (lastGeneratedSku) con los valores recién usados —
+// venga o no un SKU real de MLA. Ese código es el que se manda al
+// Excel de salida en la columna SKU.
 function calcularPrecioVenta(modo) {
   const costo = parseFloat(el("f-costo").value);
   if (isNaN(costo) || costo <= 0) {
@@ -360,6 +378,8 @@ function calcularPrecioVenta(modo) {
   }
 
   let neto;
+  let valorUsado;
+
   if (modo === "fijo") {
     const fijo = parseFloat(el("calcFijo").value);
     if (isNaN(fijo)) {
@@ -367,6 +387,7 @@ function calcularPrecioVenta(modo) {
       return;
     }
     neto = costo + fijo;
+    valorUsado = fijo;
   } else {
     const mult = parseFloat(el("calcMultiplicador").value);
     if (isNaN(mult)) {
@@ -374,6 +395,7 @@ function calcularPrecioVenta(modo) {
       return;
     }
     neto = costo * mult;
+    valorUsado = mult;
   }
 
   const baseClp = neto * rateCLP;
@@ -385,6 +407,8 @@ function calcularPrecioVenta(modo) {
   precioInput.value = Math.round(precioFinal).toLocaleString("es-CL");
   precioInput.dataset.raw = Math.round(precioFinal); // valor numérico puro, sin formato, para el Excel
   precioInput.disabled = false;
+
+  lastGeneratedSku = encodeSkuCode(costo, modo, valorUsado);
 
   showStatus("", "");
 }
@@ -422,6 +446,7 @@ btnAddRow.addEventListener("click", () => {
     condicion: el("f-cond").value,
     descripcion: el("f-desc").value,
     costoUsd: el("f-costo").value,
+    sku: lastGeneratedSku || "",
     fotos: lastItemData.photos || [],
     fixed: fixedValues,
     internal: internalValues,
