@@ -45,8 +45,9 @@ function toNumber(value, fallback) {
 }
 
 // Mapeo columna (letra real de la planilla) -> qué dato de la fila va ahí.
-// Las columnas A, C, E, G, Q, AF, AG, AH NO se tocan: quedan vacías o con
-// su fórmula original intacta.
+// Las columnas A, C, E, Q, AF, AG, AH NO se tocan: quedan vacías o con
+// su fórmula original intacta. La columna G (SKU) SÍ se completa ahora,
+// con el código Costo/Ganancia generado por la app (ver app.js).
 function writeRowMonedas(sheet, rowIndex, row) {
   const fx = row.fixed || {};
   const marca = fx.marca && fx.marca !== "—" ? fx.marca : "";
@@ -54,6 +55,7 @@ function writeRowMonedas(sheet, rowIndex, row) {
   sheet.getCell(`B${rowIndex}`).value = row.titulo || "";
   sheet.getCell(`D${rowIndex}`).value = row.condicion || "";
   sheet.getCell(`F${rowIndex}`).value = (row.fotos || []).join(",");
+  sheet.getCell(`G${rowIndex}`).value = row.sku || ""; // código Costo/Ganancia (X<costo>Z<ganancia>)
   sheet.getCell(`H${rowIndex}`).value = toNumber(fx.stock, 1);
   sheet.getCell(`I${rowIndex}`).value = toNumber(row.precioClpRaw, 0);
   sheet.getCell(`J${rowIndex}`).value = fx.moneda || "$";
@@ -90,6 +92,7 @@ function writeRowBilletes(sheet, rowIndex, row) {
   sheet.getCell(`B${rowIndex}`).value = row.titulo || "";
   sheet.getCell(`D${rowIndex}`).value = row.condicion || "";
   sheet.getCell(`F${rowIndex}`).value = (row.fotos || []).join(",");
+  sheet.getCell(`G${rowIndex}`).value = row.sku || ""; // código Costo/Ganancia (X<costo>Z<ganancia>)
   sheet.getCell(`H${rowIndex}`).value = toNumber(fx.stock, 1);
   sheet.getCell(`I${rowIndex}`).value = toNumber(row.precioClpRaw, 0);
   sheet.getCell(`J${rowIndex}`).value = fx.moneda || "$";
