@@ -63,6 +63,7 @@ const lblValor = el("lbl-valor");
 
 let lastItemData = null; // guarda el JSON crudo del último ítem traído
 let lastGeneratedSku = null; // código X<costo>Z/Y<valor> generado por el último cálculo de precio
+let currentPhotos = []; // fotos de la publicación actual; se puede sacar alguna con la cruz
 
 // --- Render de una grilla de celdas fijas (simples o duales) ---
 function renderFixedCells(container, fields) {
@@ -111,23 +112,52 @@ function getInternalValue(key) {
   return input ? parseFloat(input.value) : NaN;
 }
 
-// --- Render de los 10 espacios de fotos: activos (con foto real) o inactivos ---
-function renderPhotos(photoUrls) {
-  const urls = photoUrls || [];
+// --- Render de los 10 espacios de fotos, a partir de currentPhotos ---
+//
+// Cada foto real muestra una crucecita en la esquina (agregada acá con
+// estilo inline, sin tocar el CSS) — al tocarla, se saca esa foto de
+// currentPhotos y se vuelve a dibujar todo. Como "Nueva Fila" arma el
+// array de fotos a partir de currentPhotos (no de lastItemData.photos),
+// la foto sacada tampoco viaja al Excel.
+function renderPhotos() {
   photoRow.innerHTML = "";
   for (let i = 0; i < MAX_PHOTOS; i++) {
+    const url = currentPhotos[i];
+
+    const slot = document.createElement("div");
+    slot.style.position = "relative";
+
     const thumb = document.createElement("div");
-    if (urls[i]) {
+    if (url) {
       thumb.className = "coin-thumb";
-      thumb.style.backgroundImage = `url("${urls[i]}")`;
+      thumb.style.backgroundImage = `url("${url}")`;
     } else {
       thumb.className = "coin-thumb inactive";
       thumb.textContent = "—";
     }
-    photoRow.appendChild(thumb);
+    slot.appendChild(thumb);
+
+    if (url) {
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "×";
+      removeBtn.title = "Quitar esta foto";
+      removeBtn.style.cssText =
+        "position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;" +
+        "border:none;background:#a3372e;color:#fff;font-size:12px;line-height:1;" +
+        "cursor:pointer;padding:0;font-family:sans-serif;";
+      removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        currentPhotos.splice(i, 1);
+        renderPhotos();
+      });
+      slot.appendChild(removeBtn);
+    }
+
+    photoRow.appendChild(slot);
   }
 }
-renderPhotos([]); // estado inicial: los 10 espacios inactivos
+renderPhotos(); // estado inicial: los 10 espacios inactivos
 applyFieldOrder(currentMode); // orden inicial de campos (modo Monedas)
 
 // --- Mensajes de estado (error / éxito) ---
@@ -265,7 +295,8 @@ function populateForm(data) {
   el("f-costo").value = "";
   lastGeneratedSku = null;
 
-  renderPhotos(data.photos || []);
+  currentPhotos = (data.photos || []).slice();
+  renderPhotos();
 
   // Si el SKU trae un código Costo/Ganancia (formato X<costo>Z<ganancia>),
   // completamos el Costo solo y disparamos el mismo cálculo que hace
@@ -297,7 +328,8 @@ function cleanForm() {
   el("f-precio").value = "";
   el("f-precio").disabled = true;
   lastGeneratedSku = null;
-  renderPhotos([]);
+  currentPhotos = [];
+  renderPhotos();
   lookupInput.value = "";
   lastItemData = null;
   btnAddRow.disabled = true;
@@ -447,7 +479,7 @@ btnAddRow.addEventListener("click", () => {
     descripcion: el("f-desc").value,
     costoUsd: el("f-costo").value,
     sku: lastGeneratedSku || "",
-    fotos: lastItemData.photos || [],
+    fotos: currentPhotos.slice(),
     fixed: fixedValues,
     internal: internalValues,
   };
