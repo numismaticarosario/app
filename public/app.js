@@ -37,6 +37,7 @@ const INTERNAL_FIELDS = [
   { key: "tasaCambio", label: "Rate CLP - USD", value: "950" },
   { key: "comisionML", label: "Comisión ML (%)", value: "14" },
   { key: "costoFijoVenta", label: "Costo fijo por venta (CLP)", value: "750" },
+  { key: "costoEnvioGratis", label: "Costo Envío Gratis", value: "2000" },
   { key: "iva", label: "IVA (%)", value: "19" },
   { key: "envioGratisDesde", label: "Umbral Envío Gratis", value: "19999" },
 ];
@@ -388,6 +389,12 @@ btnClean.addEventListener("click", cleanForm);
 // + costo fijo por venta (CLP)
 // precio_final     = anterior ÷ (1 - iva/100)
 //
+// Salto de costo fijo: el costo fijo de venta normal es 750 CLP, pero si
+// el precio final calculado con ese valor supera el Umbral Envío Gratis,
+// se recalcula una vez más usando "Costo Envío Gratis" (2000 CLP) en su
+// lugar — porque ML cobra un cargo fijo más alto en esas ventas. Por eso
+// se calcula primero con 750 y, si hace falta, se rehace con el otro valor.
+//
 // Además, cada vez que se calcula con éxito, se regenera el código
 // Costo/Ganancia (lastGeneratedSku) con los valores recién usados —
 // venga o no un SKU real de MLA. Ese código es el que se manda al
@@ -402,10 +409,12 @@ function calcularPrecioVenta(modo) {
   const rateCLP = getInternalValue("tasaCambio");
   const comisionML = getInternalValue("comisionML");
   const costoFijoVenta = getInternalValue("costoFijoVenta");
+  const costoEnvioGratis = getInternalValue("costoEnvioGratis");
   const iva = getInternalValue("iva");
+  const umbral = getInternalValue("envioGratisDesde");
 
-  if ([rateCLP, comisionML, costoFijoVenta, iva].some((v) => isNaN(v))) {
-    showStatus("Revisá los valores fijos internos (Rate, Comisión ML, Costo fijo, IVA).", "error");
+  if ([rateCLP, comisionML, costoFijoVenta, costoEnvioGratis, iva, umbral].some((v) => isNaN(v))) {
+    showStatus("Revisá los valores fijos internos (Rate, Comisión ML, Costo fijo, Costo Envío Gratis, IVA, Umbral).", "error");
     return;
   }
 
@@ -432,8 +441,13 @@ function calcularPrecioVenta(modo) {
 
   const baseClp = neto * rateCLP;
   const protegidoML = baseClp / (1 - comisionML / 100);
-  const conCostoFijo = protegidoML + costoFijoVenta;
-  const precioFinal = conCostoFijo / (1 - iva / 100);
+
+  const calcularConCostoFijo = (costoFijo) => (protegidoML + costoFijo) / (1 - iva / 100);
+
+  let precioFinal = calcularConCostoFijo(costoFijoVenta);
+  if (precioFinal > umbral) {
+    precioFinal = calcularConCostoFijo(costoEnvioGratis);
+  }
 
   const precioInput = el("f-precio");
   precioInput.value = Math.round(precioFinal).toLocaleString("es-CL");
