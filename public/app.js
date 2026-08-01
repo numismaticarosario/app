@@ -449,9 +449,12 @@ function calcularPrecioVenta(modo) {
     precioFinal = calcularConCostoFijo(costoEnvioGratis);
   }
 
+  // Redondeo a múltiplos de 50 (ej. 6124 -> 6100, 6126 -> 6150)
+  const precioRedondeado = Math.round(precioFinal / 50) * 50;
+
   const precioInput = el("f-precio");
-  precioInput.value = Math.round(precioFinal).toLocaleString("es-CL");
-  precioInput.dataset.raw = Math.round(precioFinal); // valor numérico puro, sin formato, para el Excel
+  precioInput.value = precioRedondeado.toLocaleString("es-CL");
+  precioInput.dataset.raw = precioRedondeado; // valor numérico puro, sin formato, para el Excel
   precioInput.disabled = false;
 
   lastGeneratedSku = encodeSkuCode(costo, modo, valorUsado);
